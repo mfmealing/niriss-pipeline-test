@@ -9,10 +9,10 @@ from astropy.io import fits
 
 from lmfit import Model as lmfit_Model
 
-def transit_model(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, c, ldc_type='quad'):
+def transit_model(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, ldc_type='quad'):
 
     lc = plc.transit([gamma0, gamma1], rat, per, ars, ecc, inc, w, t0, t, method=ldc_type)
-    syst = (a*t**2) + (b*t) + c
+    syst = (a*t) + b
  
     lc = lc * syst
     return lc
@@ -84,13 +84,12 @@ lm_ars = 79.9
 lm_inc = 89.550
 lm_w = 90
 lm_ecc = 0
-lm_a = 10000
-lm_b = (wlc[-1]-wlc[0])/(t[-1]-t[0])
-lm_c = wlc[0]
+lm_a = (wlc[-1]-wlc[0])/(t[-1]-t[0])
+lm_b = wlc[0]
 
 initial_guess = transit_model(t, lm_rat, lm_t0, lm_gamma0 , lm_gamma1,
                                 lm_per, lm_ars, lm_inc, 
-                                lm_w, lm_ecc, lm_a, lm_b, lm_c)
+                                lm_w, lm_ecc, lm_a, lm_b)
 
 plt.figure('intial guess')
 plt.plot(t, wlc, 'bo')
@@ -115,7 +114,6 @@ lm_params.add('w', value=lm_w,  vary=False)
 lm_params.add('ecc', value=lm_ecc, vary=False)
 lm_params.add('a', value=lm_a, vary=True)
 lm_params.add('b', value=lm_b, vary=True)
-lm_params.add('c', value=lm_c, vary=True)
 
 result = gmodel.fit(wlc, lm_params, t=t, ldc_type = 'quad', weights=(1/wlc_var**(1/2)))
 print (result.fit_report())
@@ -123,7 +121,7 @@ print (result.fit_report())
 model_fit = transit_model(t, result.params['rat'].value, 
                          result.params['t0'], result.params['gamma0'], result.params['gamma1'], lm_per, 
                          result.params['ars'], result.params['inc'], lm_w, lm_ecc,
-                         result.params['a'].value, result.params['b'].value, result.params['c'].value)
+                         result.params['a'].value, result.params['b'].value)
 
 plt.figure('lm_fit')
 plt.plot(t, wlc, 'bo')

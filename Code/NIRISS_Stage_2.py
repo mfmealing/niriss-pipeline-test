@@ -137,6 +137,12 @@ for i in range(1,5):
     step.output_dir = output_dir
     result = step.run(file)
     wav = result.wavelength
+    
+    # step = FlatFieldStep()
+    # result = step.run(result)
+    
+    
+    
 
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
@@ -145,17 +151,14 @@ for i in range(1,5):
     result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
     
 
-    step = SourceTypeStep()
-    result = step.run(result)
-    
-    # step = FlatFieldStep()
+    # step = SourceTypeStep()
     # result = step.run(result)
     
-    step = PathLossStep()
-    result = step.run(result)
+    # step = PathLossStep()
+    # result = step.run(result)
     
-    step = PhotomStep()
-    result = step.run(result)
+    # step = PhotomStep()
+    # result = step.run(result)
     
     wav = np.nanmean(result.wavelength, axis=0)
     
