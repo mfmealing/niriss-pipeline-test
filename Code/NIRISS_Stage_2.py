@@ -137,10 +137,6 @@ for i in range(1,5):
     step.output_dir = output_dir
     result = step.run(file)
     wav = result.wavelength
-    
-    # step = Extract2dStep()
-    # result = step.run(result)
-    
 
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
@@ -161,13 +157,7 @@ for i in range(1,5):
     step = PhotomStep()
     result = step.run(result)
     
-    # step = WavecorrStep()
-    # step.output_dir = output_dir
-    # step.save_results = True
-    # result = step.run(result)
     wav = np.nanmean(result.wavelength, axis=0)
-    
-    # idx = np.argwhere((wav<0.7)|(wav>2.0)).T[0]
     
       
     # # =============================================================================

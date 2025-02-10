@@ -62,37 +62,24 @@ from jwst.stpipe import Step
 
 for i in range(1,5):
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg00'+str(i)+'_nis/jw02722003001_04101_00001-seg00'+str(i)+'_nis_uncal.fits'
-         
-    result = file 
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg00'+str(i)+'_nis/jw02722003001_04101_00001-seg00'+str(i)+'_nis_uncal.fits'  
+    result = file
     
     step = GroupScaleStep()
     result = step.run(result)
-    
      
     step = DQInitStep()
     result = step.run(result)
             
     step = SaturationStep()
-    #     if channel=='grating':
-    #         step.n_pix_grow_sat =1 
-    #     if channel == 'prism':
-    #         step.n_pix_grow_sat = sp_factor  # important.... 
     result = step.run(result)
      
     step = SuperBiasStep()
-    # if channel == 'grating':
-    #     if nrs ==1 :
-    #         step.override_superbias ='/Users/user1/crds_cache/references/jwst/nirspec/jwst_nirspec_superbias_0427.fits'
-    # step.output_dir = output_dir
-    # step.save_results = True
     result = step.run(result)
           
     step = RefPixStep()
-    # step.output_dir = output_dir
-    # step.save_results = True
     result = step.run(result)
-
+    
     for j in range(result.data.shape[0]):
         first_pix = result.data[j,:,0:5,:]
         last_pix = result.data[j,:,-5:,:]
@@ -101,53 +88,29 @@ for i in range(1,5):
         bkg_3d = np.expand_dims(bkg_med, axis=1)
         bkg = np.repeat(bkg_3d, result.shape[2], axis=1)
         result.data[j] = result.data[j] - bkg
-    
-    # if channel == 'prism':
-    #     step = pipeline_lib.CustomBkg()
-    #     result = step.run(result)
-    # elif channel == 'grating':
-    #     step = pipeline_lib.CustomBkgStage1_grating()
-    #     result = step.run(result, nrs)
             
     step = LinearityStep()
-    # step.output_dir = output_dir
     result = step.run(result)
           
     step = DarkCurrentStep()
     result = step.run(result)
      
     step = JumpStep()
-    step.rejection_threshold  = 15
+    step.rejection_threshold  = 5
     print ("step.rejection_threshold", step.rejection_threshold)
     result = step.run(result)           
-    
             
     step = RampFitStep()
-    # step.save_results = True
-    # step.save_opt = False
-    # step.suppress_one_group = True # default
-    # if channel == 'prism':
-    #     step.suppress_one_group = False # allows slopes to be obtained from gp 1 in sat ramps
     result = step.run(result)[1]
-      
          
     step = GainScaleStep()
     result = step.run(result)
+    
     
     print (result.data.shape)
     plt.figure('img 1')
     plt.imshow(result.data[0], aspect='auto')
     plt.show()
     
-    
-    # import re
-    # idx1 = [m.start() for m in re.finditer('/', file)][-1]+1
-    # idx2  =  file.find('.fits')
-    # file_name = file[idx1:idx2]
-    file_name = file.replace('uncal', 'rateints')
-    # file_path = './fits_files/%s'%(channel)
-    # if not os.path.exists(file_path):
-    #     os.makedirs(file_path)
-    # result.save('%s/%s_%s.fits'%(file_path,file_name, tag)) 
-     
+    file_name = file.replace('uncal', 'rateints')     
     result.save(file_name) 

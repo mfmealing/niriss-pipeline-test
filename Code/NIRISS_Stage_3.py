@@ -31,14 +31,13 @@ for seg in seg_list:
     var = (hdul[4].data)**2
     
     bjd = int_times['int_mid_BJD_TDB']
-    mjd= int_times['int_mid_MJD_UTC']
+    mjd = int_times['int_mid_MJD_UTC']
     
-    # idx = np.argwhere((wav<1.0 ) | (wav>2.0)).T[0]
     wlc = np.nansum(slc, axis=1)
     
     if seg == seg_list[0]:
-        slc_stack =slc
-        var_stack =var
+        slc_stack = slc
+        var_stack = var
         bjd_stack = bjd
     else:
         slc_stack = np.vstack((slc_stack, slc))
@@ -55,17 +54,18 @@ bjd = bjd_stack
 plt.figure('wlc')
 plt.plot(bjd, wlc, '.')
 
+
 # 4. time-bin
 # ============================================================================= 
 plt.figure('wlc after time bin')
-time_bin=20
-idx  =  np.arange(0, slc.shape[0], time_bin)
-bjd =   (np.add.reduceat(bjd, idx)/  time_bin) [:-1]
-slc  =  np.add.reduceat(slc, idx, axis=0)[:-1]
-var  =  np.add.reduceat(var, idx, axis=0)[:-1]
+time_bin = 20
+idx = np.arange(0, slc.shape[0], time_bin)
+bjd = (np.add.reduceat(bjd, idx)/  time_bin) [:-1]
+slc = np.add.reduceat(slc, idx, axis=0)[:-1]
+var = np.add.reduceat(var, idx, axis=0)[:-1]
 idx = np.argwhere((wav<1.0 ) | (wav>2.0)).T[0]
-wlc  =  np.nansum(slc[:,idx],axis=1)
-wlc_var  =  np.nansum(var[:,idx],axis=1)
+wlc = np.nansum(slc[:,idx],axis=1)
+wlc_var = np.nansum(var[:,idx],axis=1)
 print ('time_step (s): ', np.diff(bjd)[0]*24*60*60)   
 plt.errorbar(bjd, wlc, wlc_var**0.5, fmt='ro')
 
@@ -73,12 +73,7 @@ plt.errorbar(bjd, wlc, wlc_var**0.5, fmt='ro')
 # =============================================================================
 # initial guess
 # =============================================================================
-t= bjd-bjd[0]
-# t_idx = np.argwhere((t>0.05) & (wlc>5.2557e8)).T[0]
-# t = t[t_idx]
-# wlc = wlc[t_idx]
-# wlc_var = wlc_var[t_idx]
-
+t = bjd-bjd[0]
             
 lm_rat = 0.05412
 lm_t0 = (bjd[-1] - bjd[0]) / 2
@@ -103,7 +98,7 @@ plt.plot(t, initial_guess, 'g-', linewidth=3)
 
 
 # =============================================================================
-# fit with quadratic systematics
+# lm_fit to wlc
 # =============================================================================
 
 gmodel = lmfit_Model(transit_model)
@@ -138,7 +133,6 @@ plt.plot(t, model_fit, 'r-', linewidth = 3)
 # =============================================================================
 # residuals and best fit models
 # =============================================================================
-
 
 res = model_fit - wlc
 print(np.std(res))
