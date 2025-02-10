@@ -77,18 +77,34 @@ for i in range(1,5):
     step = SuperBiasStep()
     result = step.run(result)
           
-    step = RefPixStep()
-    result = step.run(result)
+    # step = RefPixStep()
+    # result = step.run(result)
     
-    for j in range(result.data.shape[0]):
-        first_pix = result.data[j,:,0:5,:]
-        last_pix = result.data[j,:,-5:,:]
-        bkg_stack = np.hstack((first_pix,last_pix))
-        bkg_med = np.nanmedian(bkg_stack, axis=1)
-        bkg_3d = np.expand_dims(bkg_med, axis=1)
-        bkg = np.repeat(bkg_3d, result.shape[2], axis=1)
-        result.data[j] = result.data[j] - bkg
-            
+    group_flux = []
+    for k in range(result.data.shape[1]):
+        group = result.data[:,k,:,:]
+        group_med = np.nanmedian(group, axis=0)
+        group_3d = np.expand_dims(group_med, axis=0)
+        flux = np.repeat(group_3d, result.shape[0], axis=0)
+        group_flux.append(flux)
+    
+    flux_final = np.stack(group_flux, axis=1)
+    f_noise = result.data - flux_final
+    
+    plt.imshow(f_noise[0,0,:,:], vmin=-40,  vmax=40)
+    plt.show()
+    xx
+    
+    for j in range(f_noise.shape[0]):
+        first_pix = f_noise[j,:,0:5,:]
+        last_pix = f_noise[j,:,-5:,:]
+        f_noise_stack = np.hstack((first_pix,last_pix))
+        f_noise_med = np.nanmedian(f_noise_stack, axis=1)
+        f_noise_3d = np.expand_dims(f_noise_med, axis=1)
+        f_noise_final = np.repeat(f_noise_3d, result.shape[2], axis=1)
+        result.data[j] = result.data[j] - f_noise_final
+        
+
     step = LinearityStep()
     result = step.run(result)
           
@@ -107,7 +123,7 @@ for i in range(1,5):
     result = step.run(result)
     
     
-    print (result.data.shape)
+    print(result.data.shape)
     plt.figure('img 1')
     plt.imshow(result.data[0], aspect='auto')
     plt.show()
