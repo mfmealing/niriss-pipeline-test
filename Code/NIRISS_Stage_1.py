@@ -102,10 +102,10 @@ for i in range(1,5):
         
     # for j in range(f_noise.shape[0]):
     #     for k in range(f_noise.shape[1]):
-    #         for l in range(f_noise.shape[2]):
-    #             col = f_noise[j,k,l,:]
+    #         for l in range(f_noise.shape[3]):
+    #             col = f_noise[j,k,:,l]
     #             col_med = np.nanmedian(col)
-    #             result.data[j,k,l,:] = result.data[j,k,l,:] - col_med 
+    #             result.data[j,k,:,l] = result.data[j,k,:,l] - col_med 
 
     step = LinearityStep()
     result = step.run(result)

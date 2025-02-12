@@ -141,9 +141,19 @@ for i in range(1,5):
     # step = FlatFieldStep()
     # result = step.run(result)
     
+    # section = result.data[:,210:250,720:770]
+    # section_med = np.nanmedian(section, axis=0)
+    # how to subtract from result.data?
     
+    region = result.data[:,:,0:700]
+    region_med_int = np.nanmedian(region, axis=0)
+    region_med_col = np.nanmedian(region_med_int, axis=1)
+    region_med_2d = np.expand_dims(region_med_col, axis=0)
+    region_med_2d_full = np.repeat(region_med_2d, result.shape[0], axis=0)
+    region_med_3d = np.expand_dims(region_med_2d_full, axis=2)
+    region_med_3d_full = np.repeat(region_med_3d, 700, axis=2)
+    result.data[:,:,0:700] = result.data[:,:,0:700] - region_med_3d_full
     
-
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
     low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
