@@ -91,10 +91,6 @@ for i in range(1,5):
     flux_final = np.stack(group_flux, axis=1)
     f_noise = result.data - flux_final
     
-    plt.imshow(f_noise[0,0,:,:], vmin=-40,  vmax=40)
-    plt.show()
-    xx
-    
     for j in range(f_noise.shape[0]):
         first_pix = f_noise[j,:,0:5,:]
         last_pix = f_noise[j,:,-5:,:]
@@ -104,6 +100,12 @@ for i in range(1,5):
         f_noise_final = np.repeat(f_noise_3d, result.shape[2], axis=1)
         result.data[j] = result.data[j] - f_noise_final
         
+    # for j in range(f_noise.shape[0]):
+    #     for k in range(f_noise.shape[1]):
+    #         for l in range(f_noise.shape[2]):
+    #             col = f_noise[j,k,l,:]
+    #             col_med = np.nanmedian(col)
+    #             result.data[j,k,l,:] = result.data[j,k,l,:] - col_med 
 
     step = LinearityStep()
     result = step.run(result)
