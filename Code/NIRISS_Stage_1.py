@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 22 21:28:19 2023
-
-@author: user1
-
-"""
-
 import os
 os.environ['CRDS_PATH'] ='/Users/c24050258/crds_cache'
 os.environ['CRDS_SERVER_URL'] ='https://jwst-crds.stsci.edu'
@@ -98,7 +89,8 @@ for i in range(1,5):
         f_noise_med = np.nanmedian(f_noise_stack, axis=1)
         f_noise_3d = np.expand_dims(f_noise_med, axis=1)
         f_noise_final = np.repeat(f_noise_3d, result.shape[2], axis=1)
-        result.data[j] = result.data[j] - f_noise_final
+        # result.data[j] = result.data[j] - f_noise_final
+        f_noise[j] = f_noise[j] - f_noise_final
         
     # for j in range(f_noise.shape[0]):
     #     for k in range(f_noise.shape[1]):
