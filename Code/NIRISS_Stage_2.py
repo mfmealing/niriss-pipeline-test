@@ -116,9 +116,10 @@ def interpolate_nans(array):
         array[nan_ind] = interp(nan_ind)
     return array
 
+bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
+
 combined_array = []
 combined_array2 = []
-
 
 for i in range(1,5):
 
@@ -131,7 +132,6 @@ for i in range(1,5):
     int_times = hdul[4].data  
     varp = hdul[5].data   
     varr = hdul[6].data  
-    
          
     step = AssignWcsStep()
     step.output_dir = output_dir
@@ -141,34 +141,27 @@ for i in range(1,5):
     # step = FlatFieldStep()
     # result = step.run(result)
     
-    # section = result.data[:,210:250,720:770]
-    # section_med = np.nanmedian(section, axis=0)
-    # how to subtract from result.data?
+    section = result.data[:,210:250,720:770]
+    bkd_section = bkd_model[210:250,720:770]
+    section_med = np.nanmedian(section, axis=0)
+    scale_arr = section_med / bkd_section
+    scale_val = np.nanmedian(scale_arr)
+    scaled_bkd = scale_val * bkd_model
+    result.data = result.data - scaled_bkd
     
-    region = result.data[:,:,0:700]
-    region_med_int = np.nanmedian(region, axis=0)
-    region_med_col = np.nanmedian(region_med_int, axis=1)
-    region_med_2d = np.expand_dims(region_med_col, axis=0)
-    region_med_2d_full = np.repeat(region_med_2d, result.shape[0], axis=0)
-    region_med_3d = np.expand_dims(region_med_2d_full, axis=2)
-    region_med_3d_full = np.repeat(region_med_3d, 700, axis=2)
-    result.data[:,:,0:700] = result.data[:,:,0:700] - region_med_3d_full
+    first_pix = result.data[:,5:25,:]
+    last_pix = result.data[:,-30:-5,:]
+    bkd_stack = np.hstack((first_pix,last_pix))
+    bkd_med = np.nanmedian(bkd_stack, axis=1)
+    bkd_3d = np.expand_dims(bkd_med, axis=1)
+    bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
+    result.data = result.data - bkd_final
     
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
     low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
     result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
     result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
-    
-
-    # step = SourceTypeStep()
-    # result = step.run(result)
-    
-    # step = PathLossStep()
-    # result = step.run(result)
-    
-    # step = PhotomStep()
-    # result = step.run(result)
     
     wav = np.nanmean(result.wavelength, axis=0)
     
@@ -230,19 +223,13 @@ for i in range(1,5):
     plt.plot(white_lc, '.')
     plt.show()
     
-    # white_lc2 = np.nansum(flux_array[:,idx], axis=1)
-    # combined_array2.append(white_lc2)
-    # plt.figure('seperate curves2')
-    # plt.plot(white_lc2, '.')
-    # plt.show()
-    
     
 start_index = 0
 
 for j in combined_array:
     x_values = np.arange(start_index, start_index + len(j))
     plt.figure('combined curve')
-    plt.plot(x_values, j,'.', color='tab:blue')
+    plt.plot(x_values, j, '.', color='tab:blue')
     start_index += len(j)
 
 plt.show()    
