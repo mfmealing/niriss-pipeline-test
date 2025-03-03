@@ -46,14 +46,13 @@ for seg in seg_list:
 
     
     plt.plot(bjd, wlc)
-    
+
 wlc = np.nansum(slc_stack, axis=1)
 slc = slc_stack
 var = var_stack
 bjd = bjd_stack
 plt.figure('wlc')
 plt.plot(bjd, wlc, '.')
-
 
 # 4. time-bin
 # ============================================================================= 
