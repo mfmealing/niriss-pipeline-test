@@ -81,36 +81,14 @@ for i in range(1,5):
     
     flux_final = np.stack(group_flux, axis=1)
     f_noise = result.data - flux_final
-    plt.figure('1/f noise')
-    plt.imshow(f_noise[0][3], aspect='auto', vmax=50)
-
     
-    # for j in range(f_noise.shape[0]):
-    #     first_pix = f_noise[j,:,0:5,:]
-    #     last_pix = f_noise[j,:,-5:,:]
-    #     f_noise_stack = np.hstack((first_pix,last_pix))
-    #     f_noise_med = np.nanmedian(f_noise_stack, axis=1)
-    #     f_noise_3d = np.expand_dims(f_noise_med, axis=1)
-    #     f_noise_final = np.repeat(f_noise_3d, result.shape[2], axis=1)
-        # f_noise[j] = f_noise[j] - f_noise_final
-    
-    first_pix = f_noise[:,:,0:5,:]
-    last_pix = f_noise[:,:,-5:,:]
+    first_pix = f_noise[:,:,5:25,:]
+    last_pix = f_noise[:,:,-30:-5,:]
     f_noise_stack = np.dstack((first_pix,last_pix))
     f_noise_med = np.nanmedian(f_noise_stack, axis=2)
-    f_noise_3d = np.expand_dims(f_noise_med, axis=2)
-    f_noise_final = np.repeat(f_noise_3d, result.shape[2], axis=2)
-    f_noise = f_noise - f_noise_final
-    
-    plt.figure('1/f noise final')
-    plt.imshow(f_noise[0][3], aspect='auto', vmax=50)
-    
-    xx
-
-    col_med = np.nanmedian(f_noise, axis=2)
-    med_4d = np.expand_dims(col_med, axis=2)
-    med_final = np.repeat(med_4d, result.shape[2], axis=2)
-    result.data = result.data - med_final
+    f_noise_4d = np.expand_dims(f_noise_med, axis=2)
+    f_noise_final = np.repeat(f_noise_4d, result.data.shape[2], axis=2)
+    result.data = result.data - f_noise_final
 
     step = LinearityStep()
     result = step.run(result)
