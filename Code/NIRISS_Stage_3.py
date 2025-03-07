@@ -57,7 +57,7 @@ plt.plot(bjd, wlc, '.')
 # 4. time-bin
 # ============================================================================= 
 plt.figure('wlc after time bin')
-time_bin = 20 # Change to 10?  
+time_bin = 1
 idx = np.arange(0, slc.shape[0], time_bin)
 bjd = (np.add.reduceat(bjd, idx)/  time_bin) [:-1]
 slc = np.add.reduceat(slc, idx, axis=0)[:-1]
