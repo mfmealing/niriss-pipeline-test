@@ -86,14 +86,14 @@ result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
 integration = np.median(result.data, axis=0)
 
 # plt.figure('fig1')
-# plt.plot(integration[:,340])
+# plt.plot(integration[:,250])
 
 # plt.figure('fig2')
-# plt.plot(np.gradient(integration[:,340]))
+# plt.plot(np.gradient(integration[:,250]))
 
 # box = 5
 # bbox = np.ones(box) / box
-# a = np.convolve(integration[:,340], bbox, 'same')
+# a = np.convolve(integration[:,250], bbox, 'same')
 # plt.figure('fig1')
 # plt.plot(a)
 
@@ -120,17 +120,19 @@ for i in range(4, integration.shape[1]-4):
     
 x_1 = np.arange(4, integration.shape[1]-4)
 plt.figure('spectra order mask')
-plt.imshow(integration, aspect='auto', vmin=0, vmax=20)
+plt.imshow(integration, aspect='auto', vmin=0, vmax=5)
 # plt.plot(x_1, order1_first, '.', c='r')
 # plt.plot(x_1, order1_last, '.', c='r')
 
 deg = 5
-poly_coeff = np.polyfit(x_1, order1_first, deg)
-poly = np.poly1d(poly_coeff)
-plt.plot(x_1, poly(x_1)-12, '.', c='b')
-poly_coeff = np.polyfit(x_1, order1_last, deg)
-poly = np.poly1d(poly_coeff)
-plt.plot(x_1, poly(x_1)+10, '.', c='b')
+poly_coeff_first = np.polyfit(x_1, order1_first, deg)
+poly_first = np.poly1d(poly_coeff_first)
+y_1_first = poly_first(x_1)
+# plt.plot(x_1, y_1_first-12, '.', c='b')
+poly_coeff_last = np.polyfit(x_1, order1_last, deg)
+poly_last = np.poly1d(poly_coeff_last)
+y_1_last = poly_last(x_1)
+# plt.plot(x_1, y_1_last+10, '.', c='b')
 
 for j in range(4, 1750):
     if j<700:
@@ -154,12 +156,14 @@ x_2 = np.arange(4, 1750)
 # plt.plot(x_2, order2_last, '.', c='r')
 
 deg = 4
-poly_coeff = np.polyfit(x_2, order2_first, deg)
-poly = np.poly1d(poly_coeff)
-plt.plot(x_2, poly(x_2)-4, '.', c='b')
-poly_coeff = np.polyfit(x_2, order2_last, deg)
-poly = np.poly1d(poly_coeff)
-plt.plot(x_2, poly(x_2)+3, '.', c='b')
+poly_coeff_first = np.polyfit(x_2, order2_first, deg)
+poly_first = np.poly1d(poly_coeff_first)
+y_2_first = poly_first(x_2)
+# plt.plot(x_2, y_2_first-4, '.', c='b')
+poly_coeff_last = np.polyfit(x_2, order2_last, deg)
+poly_last = np.poly1d(poly_coeff_last)
+y_2_last = poly_last(x_2)
+# plt.plot(x_2, y_2_last+3, '.', c='b')
 
 for k in range(4, 792):
     order3 = integration[125:200, k]
@@ -175,9 +179,41 @@ x_3 = np.arange(4, 792)
 # plt.plot(x_3, order3_last, '.', c='r')
 
 deg = 3
-poly_coeff = np.polyfit(x_3, order3_first, deg)
-poly = np.poly1d(poly_coeff)
-plt.plot(x_3, poly(x_3)-3, '.', c='b')
-poly_coeff = np.polyfit(x_3, order3_last, deg)
-poly = np.poly1d(poly_coeff)
-plt.plot(x_3, poly(x_3)+1, '.', c='b')
+poly_coeff_first = np.polyfit(x_3, order3_first, deg)
+poly_first = np.poly1d(poly_coeff_first)
+y_3_first = poly_first(x_3)
+# plt.plot(x_3, y_3_first-3, '.', c='b')
+poly_coeff_last = np.polyfit(x_3, order3_last, deg)
+poly_last = np.poly1d(poly_coeff_last)
+y_3_last = poly_last(x_3)
+# plt.plot(x_3, y_3_last+1, '.', c='b')
+
+mask_points = []
+
+
+for i in range (integration.shape[0]):
+    row_data_1 = integration[i, 4:integration.shape[1]-4]
+    y_coord_1 = np.full_like(row_data_1, i)
+    row_mask_1 = (y_coord_1 >= y_1_first-12) & (y_coord_1 <= y_1_last+10)
+    x_val_1 = x_1[row_mask_1]
+    y_val_1 = y_coord_1[row_mask_1]
+    mask_points.append(np.column_stack((x_val_1, y_val_1)))
+    
+    row_data_2 = integration[i, 4:1750]
+    y_coord_2 = np.full_like(row_data_2, i)
+    row_mask_2 = (y_coord_2 >= y_2_first-4) & (y_coord_2 <= y_2_last+3)
+    x_val_2 = x_2[row_mask_2]
+    y_val_2 = y_coord_2[row_mask_2]
+    mask_points.append(np.column_stack((x_val_2, y_val_2)))
+    
+    row_data_3 = integration[i, 4:792]
+    y_coord_3 = np.full_like(row_data_3, i)
+    row_mask_3 = (y_coord_3 >= y_3_first-3) & (y_coord_3 <= y_3_last+1)
+    x_val_3 = x_3[row_mask_3]
+    y_val_3 = y_coord_3[row_mask_3]
+    mask_points.append(np.column_stack((x_val_3, y_val_3)))
+
+mask_points = np.vstack(mask_points)
+plt.scatter(mask_points[:, 0], mask_points[:, 1], c='r')
+
+np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy', mask_points)
