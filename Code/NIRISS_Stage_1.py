@@ -49,6 +49,12 @@ output_dir = './output'
 if not os.path.exists(output_dir ): 
     os.makedirs(output_dir )
     
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
+spectra_mask = spectra_mask.astype(int)
+mask = np.ones((256,2048), dtype=bool)
+mask[spectra_mask[:, 1], spectra_mask[:, 0]] = False
+mask_4d = np.expand_dims(np.expand_dims(mask, axis=0), axis=0)
+    
 from jwst.stpipe import Step 
 
 for i in range(1,5):
@@ -82,10 +88,9 @@ for i in range(1,5):
     flux_final = np.stack(group_flux, axis=1)
     f_noise = result.data - flux_final
     
-    first_pix = f_noise[:,:,5:25,:]
-    last_pix = f_noise[:,:,-30:-5,:]
-    f_noise_stack = np.dstack((first_pix,last_pix))
-    f_noise_med = np.nanmedian(f_noise_stack, axis=2)
+    mask_4d = np.tile(mask_4d, (result.data.shape[0], result.data.shape[1], 1, 1))
+    f_noise_mask = np.where(mask_4d, f_noise, np.nan)
+    f_noise_med = np.nanmedian(f_noise_mask, axis=2)
     f_noise_4d = np.expand_dims(f_noise_med, axis=2)
     f_noise_final = np.repeat(f_noise_4d, result.data.shape[2], axis=2)
     result.data = result.data - f_noise_final
