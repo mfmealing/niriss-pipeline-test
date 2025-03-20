@@ -118,8 +118,12 @@ def interpolate_nans(array):
 
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
 
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
+spectra_mask = spectra_mask.astype(int)
+
+
 combined_array = []
-combined_array2 = []
+
 
 for i in range(1,5):
 
@@ -141,21 +145,41 @@ for i in range(1,5):
     # step = FlatFieldStep()
     # result = step.run(result)
     
+    # plt.figure('before zodiacal subtraction')
+    # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=10)
+    
     section = result.data[:,210:250,720:770]
     bkd_section = bkd_model[210:250,720:770]
     section_med = np.nanmedian(section, axis=0)
-    scale_arr = section_med / bkd_section
+    if i == 1:
+        section_med_ = section_med
+    
+    scale_arr = section_med_ / bkd_section
     scale_val = np.nanmedian(scale_arr)
     scaled_bkd = scale_val * bkd_model
     result.data = result.data - scaled_bkd
     
-    first_pix = result.data[:,5:25,:]
-    last_pix = result.data[:,-30:-5,:]
-    bkd_stack = np.hstack((first_pix,last_pix))
-    bkd_med = np.nanmedian(bkd_stack, axis=1)
+    # plt.figure('after zodiacal subtraction')
+    # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
+    
+    mask = np.ones((256,2048), dtype=bool)
+    mask[spectra_mask[:,1], spectra_mask[:,0]] = False
+    mask_3d = np.expand_dims(mask, axis=0)
+    mask_3d = np.tile(mask_3d, (result.data.shape[0], 1, 1))
+    bkd_mask = np.where(mask_3d, result.data, np.nan)
+    
+    # plt.figure('before background subtraction')
+    # plt.imshow(bkd_mask[100], aspect='auto', vmin=0, vmax=5)
+    
+    bkd_med = np.nanmedian(bkd_mask, axis=1)
     bkd_3d = np.expand_dims(bkd_med, axis=1)
     bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
-    result.data = result.data - bkd_final
+    result.data[:,:,:700] = result.data[:,:,:700] - bkd_final[:,:,:700]
+
+    
+    # plt.figure('after background subtraction')
+    # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
+    
     
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
