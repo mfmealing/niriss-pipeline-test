@@ -142,25 +142,27 @@ for i in range(1,5):
     result = step.run(file)
     wav = result.wavelength
     
-    # step = FlatFieldStep()
-    # result = step.run(result)
     
+    step = FlatFieldStep()
+    result = step.run(result)
+
     # plt.figure('before zodiacal subtraction')
-    # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=10)
+    # plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=10)
     
     section = result.data[:,210:250,720:770]
     bkd_section = bkd_model[210:250,720:770]
     section_med = np.nanmedian(section, axis=0)
     if i == 1:
         section_med_ = section_med
-    
     scale_arr = section_med_ / bkd_section
     scale_val = np.nanmedian(scale_arr)
     scaled_bkd = scale_val * bkd_model
     result.data = result.data - scaled_bkd
     
+
+    
     # plt.figure('after zodiacal subtraction')
-    # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
+    # plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
     
     mask = np.ones((256,2048), dtype=bool)
     mask[spectra_mask[:,1], spectra_mask[:,0]] = False
@@ -169,27 +171,31 @@ for i in range(1,5):
     bkd_mask = np.where(mask_3d, result.data, np.nan)
     
     # plt.figure('before background subtraction')
-    # plt.imshow(bkd_mask[100], aspect='auto', vmin=0, vmax=5)
+    # plt.imshow(bkd_mask[50], aspect='auto', vmin=0, vmax=5)
     
     bkd_med = np.nanmedian(bkd_mask, axis=1)
     bkd_3d = np.expand_dims(bkd_med, axis=1)
     bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
     result.data[:,:,:700] = result.data[:,:,:700] - bkd_final[:,:,:700]
 
+    result.data = result.data[:,:251,5:2043]
+    result.err = result.err[:,:251,5:2043]
+
+    plt.figure('after background subtraction')
+    plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
     
-    # plt.figure('after background subtraction')
-    # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
-    
-    
+
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
     low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
     result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
     result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
     
+    plt.figure('after nan removal')
+    plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
+    
     wav = np.nanmean(result.wavelength, axis=0)
     
-      
     # # =============================================================================
     # #         box extraction
     # # =============================================================================

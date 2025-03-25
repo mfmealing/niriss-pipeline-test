@@ -117,6 +117,8 @@ def interpolate_nans(array):
     return array
 
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
+spectra_mask = spectra_mask.astype(int)
 stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg001_nis/jw02722003001_04101_00001-seg001_nis_rateints.fits',
                      '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg002_nis/jw02722003001_04101_00001-seg002_nis_rateints.fits',
                      '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg003_nis/jw02722003001_04101_00001-seg003_nis_rateints.fits',
@@ -217,6 +219,9 @@ wav = result.wavelength
 step = FlatFieldStep()
 result = step.run(result)
 
+# plt.figure('before zodiacal subtraction')
+# plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=10)
+
 section = result.data[:,210:250,720:770]
 bkd_section = bkd_model[210:250,720:770]
 section_med = np.nanmedian(section, axis=0)
@@ -225,19 +230,32 @@ scale_val = np.nanmedian(scale_arr)
 scaled_bkd = scale_val * bkd_model
 result.data = result.data - scaled_bkd
 
-# plt.figure('before bkd subtraction')
-# plt.imshow(result.data[50], aspect='auto', vmin=-5, vmax=20)
 
-first_pix = result.data[:,5:25,0:700]
-last_pix = result.data[:,-30:-5,0:700]
-bkd_stack = np.hstack((first_pix,last_pix))
-bkd_med = np.nanmedian(bkd_stack, axis=1)
+
+# plt.figure('after zodiacal subtraction')
+# plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
+
+mask = np.ones((256,2048), dtype=bool)
+mask[spectra_mask[:,1], spectra_mask[:,0]] = False
+mask_3d = np.expand_dims(mask, axis=0)
+mask_3d = np.tile(mask_3d, (result.data.shape[0], 1, 1))
+bkd_mask = np.where(mask_3d, result.data, np.nan)
+
+# plt.figure('before background subtraction')
+# plt.imshow(bkd_mask[100], aspect='auto', vmin=0, vmax=5)
+
+bkd_med = np.nanmedian(bkd_mask, axis=1)
 bkd_3d = np.expand_dims(bkd_med, axis=1)
 bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
-result.data[:,:,0:700] = result.data[:,:,0:700] - bkd_final
+result.data[:,:,:700] = result.data[:,:,:700] - bkd_final[:,:,:700]
 
-# plt.figure('after bkd subtraction')
-# plt.imshow(result.data[50], aspect='auto', vmin=-5, vmax=20)
+
+plt.figure('after background subtraction')
+plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
+
+
+result.data = result.data[:,:251,5:2043]
+result.err = result.err[:,:251,5:2043]
 
 nans = np.isnan(result.data)
 nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
@@ -245,14 +263,9 @@ low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
 result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
 result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
 
-# step = SourceTypeStep()
-# result = step.run(result)
+plt.figure('after nan removal')
+plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
 
-# step = PathLossStep()
-# result = step.run(result)
-
-# step = PhotomStep()
-# result = step.run(result)
 
 wav = np.nanmean(result.wavelength, axis=0)
     
@@ -309,8 +322,8 @@ hdul.writeto(filename, overwrite=True)
 white_lc = np.nansum(flux_array, axis=1)
 # combined_array.append(white_lc)
 
-plt.figure('seperate curves')
-plt.plot(white_lc)
+plt.figure('wlc')
+plt.plot(white_lc, '.')
 plt.show()
 
 # white_lc2 = np.nansum(flux_array[:,idx], axis=1)
