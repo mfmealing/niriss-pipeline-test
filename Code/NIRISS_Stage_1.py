@@ -70,6 +70,9 @@ for i in range(1,5):
      
     step = SuperBiasStep()
     result = step.run(result)
+    
+    file_name = file.replace('uncal', 'test')     
+    result.save(file_name) 
           
     # step = RefPixStep()
     # result = step.run(result)
@@ -119,7 +122,7 @@ for i in range(1,5):
     result = step.run(result)
     
     
-    print(result.data.shape)
+    # print(result.data.shape)
     plt.figure('img 1')
     plt.imshow(result.data[0], aspect='auto')
     plt.show()

@@ -164,6 +164,12 @@ for file in stage_1_file_list:
         int_times_stack = np.hstack((int_times_stack, int_times))
    
     hdul.close()
+    
+sci_sum = np.nansum(sci_stack, axis=1)
+sci_sum_final = np.nansum(sci_sum, axis=1)
+plt.figure('img')
+plt.plot(sci_sum_final, '.')
+xx
 
 # pick first file as the template 
 # rateints_file = '/Users/user1/Downloads/JWST webinars/NIRSpec_grating/fits_files/%s_%s_run_1_rateints.fits'%(nrs,seg_list[0])
@@ -182,6 +188,8 @@ hdul[3].data =  dq_stack
 hdul[4].data =  int_times_stack
 hdul[5].data =  varp_stack
 hdul[6].data =  varr_stack
+
+
  
 outfile0  = rateints_file  
 idx = outfile0.find('.fits')
@@ -230,8 +238,6 @@ scale_val = np.nanmedian(scale_arr)
 scaled_bkd = scale_val * bkd_model
 result.data = result.data - scaled_bkd
 
-
-
 # plt.figure('after zodiacal subtraction')
 # plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
 
@@ -248,10 +254,11 @@ bkd_med = np.nanmedian(bkd_mask, axis=1)
 bkd_3d = np.expand_dims(bkd_med, axis=1)
 bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
 result.data[:,:,:700] = result.data[:,:,:700] - bkd_final[:,:,:700]
+# result.data = result.data - bkd_final
 
 
-plt.figure('after background subtraction')
-plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
+# plt.figure('after background subtraction')
+# plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
 
 
 result.data = result.data[:,:251,5:2043]
