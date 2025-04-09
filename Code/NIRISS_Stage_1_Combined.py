@@ -105,12 +105,6 @@ for file in stage_1_file_list:
    
     hdul.close()
     
-# sci_sum = np.nansum(sci_stack, axis=1)
-# sci_sum_final = np.nansum(sci_sum, axis=1)
-# plt.figure('img')
-# plt.plot(sci_sum_final, '.')
-# xx
-
 # pick first file as the template 
 # rateints_file = '/Users/user1/Downloads/JWST webinars/NIRSpec_grating/fits_files/%s_%s_run_1_rateints.fits'%(nrs,seg_list[0])
 hdul = hdul = fits.open(rateints_file)
@@ -162,7 +156,7 @@ sci = hdul[1].data
 
 step = GroupScaleStep()
 result = step.run(rateints_file)
- 
+
 step = DQInitStep()
 result = step.run(result)
         
