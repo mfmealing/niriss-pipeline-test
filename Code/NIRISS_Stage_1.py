@@ -49,18 +49,59 @@ output_dir = './output'
 if not os.path.exists(output_dir ): 
     os.makedirs(output_dir )
     
+from jwst.stpipe import Step 
+    
 spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
 spectra_mask = spectra_mask.astype(int)
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
 wlc = []    
 
-from jwst.stpipe import Step 
-
-seg_list = ['001', '002', '003', '004', '005']
+seg_list = ['001', '002', '003', '004']
 
 for seg in seg_list: 
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/jw01353101001_04101_00001-seg%s_nis/jw01353101001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
+    result = file
+    
+    step = GroupScaleStep()
+    result = step.run(result)
+     
+    step = DQInitStep()
+    result = step.run(result)
+            
+    step = SaturationStep()
+    result = step.run(result)
+     
+    step = SuperBiasStep()
+    result = step.run(result)
+    
+    file_name = file.replace('uncal', 'pre_1f')
+    result.save(file_name) 
+          
+    hdul = hdul = fits.open(file_name)
+    sci = hdul[1].data
+    
+    if seg == seg_list[0]:
+        sci_stack = sci
+        
+    else:
+        sci_stack = np.vstack((sci_stack, sci))
+    hdul.close()
+    
+group_flux = []
+for k in range(sci_stack.shape[1]):
+    group = sci_stack[:,k,:,:]
+    group_med = np.nanmedian(group, axis=0)
+    group_flux.append(group_med)
+
+med_stack_final = np.stack(group_flux, axis=0)
+np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/group_med_pre_1f.npy', med_stack_final)
+group_med_stack = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/group_med_pre_1f.npy')
+
+
+for seg in seg_list: 
+
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
     result = file
     
     step = GroupScaleStep()
@@ -78,9 +119,6 @@ for seg in seg_list:
     # step = RefPixStep()
     # result = step.run(result)
     
-    # plt.figure('before partial background removal')
-    # plt.imshow(result.data[0,7], aspect='auto', vmin=0, vmax=300)
-    
     # data_med = np.nanmedian(result.data, axis=1)
     
     # section_700 = data_med[:,210:250,250:500]
@@ -93,9 +131,6 @@ for seg in seg_list:
     # scaled_bkd_700 = scale_val_700 * bkd_model
     # result.data[:,:,:,:700] = result.data[:,:,:,:700] - scaled_bkd_700[:,:700]
     
-    # plt.figure('after partial background removal')
-    # plt.imshow(result.data[0,7], aspect='auto', vmin=0, vmax=300)
-    
     # section = data_med[:,210:250,750:850]
     # bkd_section = bkd_model[210:250,750:850]
     # section_med = np.nanmedian(section, axis=0)
@@ -106,22 +141,19 @@ for seg in seg_list:
     # scaled_bkd = scale_val * bkd_model
     # result.data[:,:,:,700:] = result.data[:,:,:,700:] - scaled_bkd[:,700:]
     
-    # plt.figure('after full background removal')
-    # plt.imshow(result.data[0,7], aspect='auto', vmin=0, vmax=300)
+    # group_flux = []
+    # for k in range(result.data.shape[1]):
+    #     group = result.data[:,k,:,:]
+    #     group_med = np.nanmedian(group, axis=0)
+    #     group_3d = np.expand_dims(group_med, axis=0)
+    #     flux = np.repeat(group_3d, result.data.shape[0], axis=0)
+    #     group_flux.append(flux)
     
-    group_flux = []
-    for k in range(result.data.shape[1]):
-        group = result.data[:,k,:,:]
-        group_med = np.nanmedian(group, axis=0)
-        group_3d = np.expand_dims(group_med, axis=0)
-        flux = np.repeat(group_3d, result.data.shape[0], axis=0)
-        group_flux.append(flux)
+    # flux_final = np.stack(group_flux, axis=1)
     
-    flux_final = np.stack(group_flux, axis=1)
+    group_med_4d = np.expand_dims(group_med_stack, axis=0)
+    flux_final = np.repeat(group_med_4d, result.data.shape[0], axis=0)
     f_noise = result.data - flux_final
-    
-    # plt.figure('before 1/f subtraction')
-    # plt.imshow(result.data[100,3], aspect='auto', vmin=0, vmax=300)
     
     mask = np.ones((256,2048), dtype=bool)
     mask[spectra_mask[:,1], spectra_mask[:,0]] = False
@@ -132,9 +164,6 @@ for seg in seg_list:
     f_noise_4d = np.expand_dims(f_noise_med, axis=2)
     f_noise_final = np.repeat(f_noise_4d, result.data.shape[2], axis=2)
     result.data = result.data - f_noise_final
-    
-    # plt.figure('after 1/f subtraction')
-    # plt.imshow(result.data[0,7], aspect='auto', vmin=0, vmax=300)
 
     step = LinearityStep()
     result = step.run(result)

@@ -121,13 +121,13 @@ bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUnive
 spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
 spectra_mask = spectra_mask.astype(int)
 
-
 combined_array = []
 
+seg_list = ['001', '002', '003', '004']
 
-for i in range(1,5):
+for seg in seg_list: 
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg00'+str(i)+'_nis/jw02722003001_04101_00001-seg00'+str(i)+'_nis_rateints.fits'
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_rateints.fits'%(seg, seg)
     
     hdul = fits.open(file)
     sci = hdul[1].data
@@ -136,42 +136,31 @@ for i in range(1,5):
     int_times = hdul[4].data  
     varp = hdul[5].data   
     varr = hdul[6].data  
+    
          
     step = AssignWcsStep()
     step.output_dir = output_dir
     result = step.run(file)
     wav = result.wavelength
     
-    
     step = FlatFieldStep()
     result = step.run(result)
-
-    # plt.figure('before zodiacal subtraction')
-    # plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=10)
     
     section = result.data[:,210:250,720:770]
     bkd_section = bkd_model[210:250,720:770]
     section_med = np.nanmedian(section, axis=0)
-    if i == 1:
+    if seg == seg_list[0]:
         section_med_ = section_med
     scale_arr = section_med_ / bkd_section
     scale_val = np.nanmedian(scale_arr)
     scaled_bkd = scale_val * bkd_model
     result.data = result.data - scaled_bkd
     
-
-    
-    # plt.figure('after zodiacal subtraction')
-    # plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
-    
     mask = np.ones((256,2048), dtype=bool)
     mask[spectra_mask[:,1], spectra_mask[:,0]] = False
     mask_3d = np.expand_dims(mask, axis=0)
     mask_3d = np.tile(mask_3d, (result.data.shape[0], 1, 1))
     bkd_mask = np.where(mask_3d, result.data, np.nan)
-    
-    # plt.figure('before background subtraction')
-    # plt.imshow(bkd_mask[50], aspect='auto', vmin=0, vmax=5)
     
     bkd_med = np.nanmedian(bkd_mask, axis=1)
     bkd_3d = np.expand_dims(bkd_med, axis=1)
@@ -180,10 +169,7 @@ for i in range(1,5):
 
     result.data = result.data[:,:251,5:2043]
     result.err = result.err[:,:251,5:2043]
-
-    plt.figure('after background subtraction')
-    plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
-    
+    result.wavelength = result.wavelength[:251,5:2043]
 
     nans = np.isnan(result.data)
     nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
@@ -259,7 +245,7 @@ start_index = 0
 for j in combined_array:
     x_values = np.arange(start_index, start_index + len(j))
     plt.figure('combined curve')
-    plt.plot(x_values, j, '.', color='tab:blue')
+    plt.plot(x_values, j, '.', c='b')
     start_index += len(j)
 
 plt.show()    
