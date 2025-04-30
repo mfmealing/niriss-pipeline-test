@@ -121,8 +121,8 @@ for i in range(4, integration.shape[1]-4):
 x_1 = np.arange(4, integration.shape[1]-4)
 plt.figure('spectra order mask')
 plt.imshow(integration, aspect='auto', vmin=0, vmax=5)
-plt.plot(x_1, order1_first, '.', c='r')
-plt.plot(x_1, order1_last, '.', c='r')
+# plt.plot(x_1, order1_first, '.', c='r')
+# plt.plot(x_1, order1_last, '.', c='r')
 
 deg = 5
 poly_coeff_first = np.polyfit(x_1, order1_first, deg)
@@ -152,8 +152,8 @@ for j in range(4, 1750):
         order2_last.append(min_der2+75)
 
 x_2 = np.arange(4, 1750)
-plt.plot(x_2, order2_first, '.', c='r')
-plt.plot(x_2, order2_last, '.', c='r')
+# plt.plot(x_2, order2_first, '.', c='r')
+# plt.plot(x_2, order2_last, '.', c='r')
 
 deg = 4
 poly_coeff_first = np.polyfit(x_2, order2_first, deg)
@@ -175,8 +175,8 @@ for k in range(4, 792):
     order3_last.append(min_der3+125)
 
 x_3 = np.arange(4, 792)
-plt.plot(x_3, order3_first, '.', c='r')
-plt.plot(x_3, order3_last, '.', c='r')
+# plt.plot(x_3, order3_first, '.', c='r')
+# plt.plot(x_3, order3_last, '.', c='r')
 
 deg = 3
 poly_coeff_first = np.polyfit(x_3, order3_first, deg)
@@ -214,6 +214,6 @@ for i in range (integration.shape[0]):
     mask_points.append(np.column_stack((x_val_3, y_val_3)))
 
 mask_points = np.vstack(mask_points)
-# plt.scatter(mask_points[:, 0], mask_points[:, 1], c='r')
+plt.scatter(mask_points[:,0], mask_points[:,1], c='r')
 
 np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy', mask_points)

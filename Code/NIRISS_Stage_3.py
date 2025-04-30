@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from uncertainties import ufloat
+from sklearn.preprocessing import normalize
  
 matplotlib.style.use('classic')
  
@@ -17,56 +19,41 @@ def transit_model(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, ldc_t
     lc = lc * syst
     return lc
 
-seg_list = ['001', '002', '003', '004']
+file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/nis_1Dspec_box_extract_combined.fits'
 
-plt.figure('segments')
-for seg in seg_list: 
+hdul = fits.open(file)
+int_times = hdul[1].data
+slc = hdul[2].data
+wav = hdul[3].data
+var = (hdul[4].data)**2
+bjd = int_times['int_mid_BJD_TDB']
+mjd = int_times['int_mid_MJD_UTC']
+wlc = np.nansum(slc, axis=1)
 
-    f='/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_1Dspec_box_extract.fits'%(seg, seg)
-    
-    hdul = fits.open(f)
-    int_times = hdul[1].data
-    slc = hdul[2].data
-    wav = hdul[3].data
-    var = (hdul[4].data)**2
-    
-    bjd = int_times['int_mid_BJD_TDB']
-    mjd = int_times['int_mid_MJD_UTC']
-    
-    wlc = np.nansum(slc, axis=1)
-    
-    if seg == seg_list[0]:
-        slc_stack = slc
-        var_stack = var
-        bjd_stack = bjd
-    else:
-        slc_stack = np.vstack((slc_stack, slc))
-        var_stack = np.vstack((var_stack, slc))
-        bjd_stack = np.hstack((bjd_stack, bjd))
-
-    
-    plt.plot(bjd, wlc)
-
-wlc = np.nansum(slc_stack, axis=1)
-slc = slc_stack
-var = var_stack
-bjd = bjd_stack
 plt.figure('wlc')
 plt.plot(bjd, wlc, '.')
 
 # 4. time-bin
 # ============================================================================= 
 plt.figure('wlc after time bin')
-time_bin = 5
+time_bin = 1
 idx = np.arange(0, slc.shape[0], time_bin)
 bjd = (np.add.reduceat(bjd, idx)/  time_bin) [:-1]
 slc = np.add.reduceat(slc, idx, axis=0)[:-1]
 var = np.add.reduceat(var, idx, axis=0)[:-1]
-idx = np.argwhere((wav<1.0 ) | (wav>2.0)).T[0]
+idx = np.argwhere((wav<2.0) | (wav>2.8)).T[0]
 wlc = np.nansum(slc[:,idx],axis=1)
 wlc_var = np.nansum(var[:,idx],axis=1)
-print ('time_step (s): ', np.diff(bjd)[0]*24*60*60)   
-plt.errorbar(bjd, wlc, wlc_var**0.5, fmt='ro')
+print ('time_step (s): ', np.diff(bjd)[0]*24*60*60)  
+
+wlc_norm = wlc / np.max(wlc)
+wlc_var_norm = wlc_var / (np.max(wlc)**2)
+
+
+plt.errorbar(bjd, wlc_norm, wlc_var_norm**0.5, fmt='bo')
+plt.xlabel('Time (BJD)')
+plt.ylabel('Normalised Flux')
+plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
 
 
 # =============================================================================
@@ -126,6 +113,8 @@ plt.figure('lm_fit')
 plt.plot(t, wlc, 'bo')
 plt.plot(t, model_fit, 'r-', linewidth = 3)
 
+fixed_vals = [result.params['t0'], result.params['gamma0'], result.params['gamma1'], result.params['ars'], result.params['inc']]
+np.savetxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/lm_fit_fixed_vals.csv', fixed_vals, delimiter=',')
 
 # =============================================================================
 # residuals and best fit models
@@ -134,9 +123,8 @@ plt.plot(t, model_fit, 'r-', linewidth = 3)
 res = model_fit - wlc
 print(np.std(res))
 
-plt.figure('residuals')
-plt.plot(t, res, '.')
-plt.grid(True)
+# plt.figure('residuals')
+# plt.plot(t, res, '.')
 
 var = np.var(res)
 

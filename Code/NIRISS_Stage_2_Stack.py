@@ -58,6 +58,7 @@ from astropy.visualization import ImageNormalize, ManualInterval, LogStretch
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy import interpolate
+import pastasoss
 
 # jwst imports 
 import jwst
@@ -120,6 +121,9 @@ def interpolate_nans(array):
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
 spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
 spectra_mask = spectra_mask.astype(int)
+spectra_mask_order1 = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra_Order_1.npy')
+spectra_mask_order1 = spectra_mask_order1.astype(int)
+
 stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg001_nis/jw02722003001_04101_00001-seg001_nis_rateints.fits',
                      '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg002_nis/jw02722003001_04101_00001-seg002_nis_rateints.fits',
                      '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg003_nis/jw02722003001_04101_00001-seg003_nis_rateints.fits',
@@ -128,15 +132,6 @@ stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniv
 for file in stage_1_file_list:
   
     rateints_file = file
-  
-    # in primary header
-    #must change EXSEGNUM = 1
-    # EXSEGTOT = 1
-    # INTSTART = 1
-    # INTEND = NINTS
-    #other headers don't need changing
-    # stack SCI, GROUP and INT_TIMES
-    # asdf extension appers to be same in each segment (looking at the plot)
   
     #do stacking
  
@@ -167,7 +162,6 @@ for file in stage_1_file_list:
     hdul.close()
     
 # pick first file as the template 
-# rateints_file = '/Users/user1/Downloads/JWST webinars/NIRSpec_grating/fits_files/%s_%s_run_1_rateints.fits'%(nrs,seg_list[0])
 hdul = hdul = fits.open(rateints_file)
   
 header = hdul[0].header
@@ -183,30 +177,19 @@ hdul[3].data =  dq_stack
 hdul[4].data =  int_times_stack
 hdul[5].data =  varp_stack
 hdul[6].data =  varr_stack
-
-
  
 outfile0  = rateints_file  
-idx = outfile0.find('.fits')
-aa = outfile0[idx:]
-tag = 'test'
-outfile0  = outfile0.replace(aa, '%s.fits'%(tag))
- 
-  
-# idx = outfile0.find('seg')
-  
-# aa = outfile0[idx:idx+6]
-  
-# outfile0  = outfile0.replace(aa, 'COMBINED')
+outfile0 = outfile0.replace('jw02722003001_04101_00001-seg004_nis/jw02722003001_04101_00001-seg004_', '')
+outfile0 = outfile0.replace('.fits', '_combined.fits')
  
 # # # Write the new HDU structure to outfile
 hdul.writeto(outfile0, overwrite=True)
-  
+
 hdul.close()
   
-rateints_file = outfile0
+file = outfile0
     
-hdul = fits.open(rateints_file)
+hdul = fits.open(file)
 sci = hdul[1].data
 err = hdul[2].data
 dq = hdul[3].data 
@@ -216,14 +199,11 @@ varr = hdul[6].data
      
 step = AssignWcsStep()
 step.output_dir = output_dir
-result = step.run(rateints_file)
+result = step.run(file)
 wav = result.wavelength
 
 step = FlatFieldStep()
 result = step.run(result)
-
-# plt.figure('before zodiacal subtraction')
-# plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=10)
 
 section = result.data[:,210:250,720:770]
 bkd_section = bkd_model[210:250,720:770]
@@ -233,31 +213,20 @@ scale_val = np.nanmedian(scale_arr)
 scaled_bkd = scale_val * bkd_model
 result.data = result.data - scaled_bkd
 
-# plt.figure('after zodiacal subtraction')
-# plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=5)
-
 mask = np.ones((256,2048), dtype=bool)
 mask[spectra_mask[:,1], spectra_mask[:,0]] = False
 mask_3d = np.expand_dims(mask, axis=0)
 mask_3d = np.tile(mask_3d, (result.data.shape[0], 1, 1))
 bkd_mask = np.where(mask_3d, result.data, np.nan)
 
-# plt.figure('before background subtraction')
-# plt.imshow(bkd_mask[100], aspect='auto', vmin=0, vmax=5)
-
 bkd_med = np.nanmedian(bkd_mask, axis=1)
 bkd_3d = np.expand_dims(bkd_med, axis=1)
 bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
 result.data[:,:,:700] = result.data[:,:,:700] - bkd_final[:,:,:700]
-# result.data = result.data - bkd_final
 
-
-# plt.figure('after background subtraction')
-# plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
-
-
-result.data = result.data[:,:251,5:2043]
-result.err = result.err[:,:251,5:2043]
+result.data[:,251:,:] = result.data[:,:,:5] = result.data[:,:,2043:] = 0
+result.err[:,251:,:] = result.err[:,:,:5] = result.err[:,:,2043:] = 0
+result.wavelength[251:,:] = result.wavelength[:,:5] = result.wavelength[:,2043:] = 0
 
 nans = np.isnan(result.data)
 nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
@@ -265,40 +234,47 @@ low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
 result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
 result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
 
-plt.figure('after nan removal')
-plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
+# plt.figure('after nan removal')
+# plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
+
+# step = Extract1dStep()
+# result = step.run(result)
+
+pwcpos = result.meta.instrument.pupil_position
+trace_order1 = pastasoss.get_soss_traces(pwcpos=pwcpos, order='1', interp=True) 
+x_order1, y_order1, wav_order1 = trace_order1.x, trace_order1.y, trace_order1.wavelength
+
+mask_order1 = np.zeros((256,2048), dtype=bool)
+mask_order1[spectra_mask_order1[:,1], spectra_mask_order1[:,0]] = True
+mask_3d_order1 = np.expand_dims(mask_order1, axis=0)
+mask_3d_order1 = np.tile(mask_3d_order1, (result.data.shape[0], 1, 1))
+box_mask_order1 = np.where(mask_3d_order1, result.data, np.nan)
+box_mask_err_order1 = np.where(mask_3d_order1, result.err, np.nan)
+# plt.imshow(box_mask_order1[100], aspect='auto', vmin=0)
 
 
-wav = np.nanmean(result.wavelength, axis=0)
-    
-      
     # # =============================================================================
     # #         box extraction
     # # =============================================================================
      
 print ('extracting 1D spectra with box extraction')
-# for intg in range(sci.shape[0]):
-    
 
 seq = np.arange(result.data.shape[0])  
 from tqdm import tqdm
-flux_array = np.zeros((result.data.shape[0], result.data.shape[2]))
-flux_var_array = np.zeros((result.data.shape[0], result.data.shape[2]))
-         
+flux_array = np.zeros((box_mask_order1.shape[0], box_mask_order1.shape[2]))
+flux_var_array = np.zeros((box_mask_order1.shape[0], box_mask_order1.shape[2]))
+
 for intg in tqdm(seq):
-   
-      # print ('extracting 1D spectrum from integration... %s'%(intg))
-   
-      img = result.data[intg]
+      img = box_mask_order1[intg]
       
-      img_err = result.err[intg]
+      img_err = box_mask_err_order1[intg]
       img_var = img_err**2
       
-      flux_simple  = np.sum(img, axis=0)
+      flux_simple  = np.nansum(img, axis=0)
       
       flux_array[intg] = flux_simple
-      flux_var_array[intg] = np.sum(img_var, axis=0)
-      
+      flux_var_array[intg] = np.nansum(img_var, axis=0)
+
 n = np.arange(100.0)
 hdu= fits.PrimaryHDU(n)
 hdul = fits.HDUList([hdu])
@@ -312,7 +288,7 @@ hdul[2].data= flux_array
 
 hdul.append(fits.ImageHDU(np.ones(10)))
 hdul[3].header['EXTNAME']= 'WAV'
-hdul[3].data= wav
+hdul[3].data= wav_order1
 
 hdul.append(fits.ImageHDU(np.ones(10)))
 hdul[4].header['EXTNAME']= 'ERR'
@@ -321,26 +297,8 @@ hdul[4].data=  flux_var_array**0.5
 filename = file.replace('rateints','1Dspec_box_extract')
 hdul.writeto(filename, overwrite=True)
 
-white_lc = np.nansum(flux_array, axis=1)
-# combined_array.append(white_lc)
+wlc = np.nansum(flux_array, axis=1)
 
 plt.figure('wlc')
-plt.plot(white_lc, '.')
+plt.plot(wlc, '.')
 plt.show()
-
-# white_lc2 = np.nansum(flux_array[:,idx], axis=1)
-# combined_array2.append(white_lc2)
-# plt.figure('seperate curves2')
-# plt.plot(white_lc2, '.')
-# plt.show()
-    
-    
-# start_index = 0
-
-# for j in combined_array:
-#     x_values = np.arange(start_index, start_index + len(j))
-#     plt.figure('combined curve')
-#     plt.plot(x_values, j,'.', color='tab:blue')
-#     start_index += len(j)
-
-# plt.show()    

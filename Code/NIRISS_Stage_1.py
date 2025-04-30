@@ -98,7 +98,6 @@ med_stack_final = np.stack(group_flux, axis=0)
 np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/group_med_pre_1f.npy', med_stack_final)
 group_med_stack = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/group_med_pre_1f.npy')
 
-
 for seg in seg_list: 
 
     file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
@@ -109,13 +108,13 @@ for seg in seg_list:
      
     step = DQInitStep()
     result = step.run(result)
-            
+    
     step = SaturationStep()
     result = step.run(result)
-     
+    
     step = SuperBiasStep()
     result = step.run(result)
-          
+    
     # step = RefPixStep()
     # result = step.run(result)
     
@@ -164,21 +163,21 @@ for seg in seg_list:
     f_noise_4d = np.expand_dims(f_noise_med, axis=2)
     f_noise_final = np.repeat(f_noise_4d, result.data.shape[2], axis=2)
     result.data = result.data - f_noise_final
-
+    
     step = LinearityStep()
     result = step.run(result)
-          
+    
     step = DarkCurrentStep()
     result = step.run(result)
-     
+    
     step = JumpStep()
     step.rejection_threshold  = 5
     print ("step.rejection_threshold", step.rejection_threshold)
     result = step.run(result)           
-            
+    
     step = RampFitStep()
     result = step.run(result)[1]
-         
+    
     step = GainScaleStep()
     result = step.run(result)
     
@@ -194,6 +193,7 @@ for seg in seg_list:
     flux_sum = np.nansum(result.data, axis=1)
     flux_sum_2 = np.nansum(flux_sum, axis=1)
     wlc.append(flux_sum_2)
+    
 
 start_index = 0
 for j in wlc:
