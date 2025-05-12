@@ -51,16 +51,15 @@ if not os.path.exists(output_dir ):
     
 from jwst.stpipe import Step 
     
-spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/masked_spectra.npy')
 spectra_mask = spectra_mask.astype(int)
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
-wlc = []    
 
 seg_list = ['001', '002', '003', '004']
 
 for seg in seg_list: 
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg%s_nis/jw01366001001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
     result = file
     
     step = GroupScaleStep()
@@ -74,10 +73,10 @@ for seg in seg_list:
      
     step = SuperBiasStep()
     result = step.run(result)
-    
+
     file_name = file.replace('uncal', 'pre_1f')
     result.save(file_name) 
-          
+        
     hdul = hdul = fits.open(file_name)
     sci = hdul[1].data
     
@@ -87,7 +86,7 @@ for seg in seg_list:
     else:
         sci_stack = np.vstack((sci_stack, sci))
     hdul.close()
-    
+   
 group_flux = []
 for k in range(sci_stack.shape[1]):
     group = sci_stack[:,k,:,:]
@@ -95,12 +94,12 @@ for k in range(sci_stack.shape[1]):
     group_flux.append(group_med)
 
 med_stack_final = np.stack(group_flux, axis=0)
-np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/group_med_pre_1f.npy', med_stack_final)
-group_med_stack = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/group_med_pre_1f.npy')
+np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/group_med_pre_1f.npy', med_stack_final)
+group_med_stack = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/group_med_pre_1f.npy')
 
 for seg in seg_list: 
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg%s_nis/jw02722003001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg%s_nis/jw01366001001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
     result = file
     
     step = GroupScaleStep()
@@ -114,41 +113,6 @@ for seg in seg_list:
     
     step = SuperBiasStep()
     result = step.run(result)
-    
-    # step = RefPixStep()
-    # result = step.run(result)
-    
-    # data_med = np.nanmedian(result.data, axis=1)
-    
-    # section_700 = data_med[:,210:250,250:500]
-    # bkd_section_700 = bkd_model[210:250,250:500]
-    # section_med_700 = np.nanmedian(section_700, axis=0)
-    # # if i == 1:
-    # #     section_med_ = section_med
-    # scale_arr_700 = section_med_700 / bkd_section_700
-    # scale_val_700 = np.nanmedian(scale_arr_700)
-    # scaled_bkd_700 = scale_val_700 * bkd_model
-    # result.data[:,:,:,:700] = result.data[:,:,:,:700] - scaled_bkd_700[:,:700]
-    
-    # section = data_med[:,210:250,750:850]
-    # bkd_section = bkd_model[210:250,750:850]
-    # section_med = np.nanmedian(section, axis=0)
-    # # if i == 1:
-    # #     section_med_ = section_med
-    # scale_arr = section_med / bkd_section
-    # scale_val = np.nanmedian(scale_arr)
-    # scaled_bkd = scale_val * bkd_model
-    # result.data[:,:,:,700:] = result.data[:,:,:,700:] - scaled_bkd[:,700:]
-    
-    # group_flux = []
-    # for k in range(result.data.shape[1]):
-    #     group = result.data[:,k,:,:]
-    #     group_med = np.nanmedian(group, axis=0)
-    #     group_3d = np.expand_dims(group_med, axis=0)
-    #     flux = np.repeat(group_3d, result.data.shape[0], axis=0)
-    #     group_flux.append(flux)
-    
-    # flux_final = np.stack(group_flux, axis=1)
     
     group_med_4d = np.expand_dims(group_med_stack, axis=0)
     flux_final = np.repeat(group_med_4d, result.data.shape[0], axis=0)
@@ -181,25 +145,9 @@ for seg in seg_list:
     step = GainScaleStep()
     result = step.run(result)
     
-    
-    # print(result.data.shape)
     plt.figure('img 1')
     plt.imshow(result.data[0], aspect='auto')
     plt.show()
     
     file_name = file.replace('uncal', 'rateints')     
-    result.save(file_name) 
-    
-    flux_sum = np.nansum(result.data, axis=1)
-    flux_sum_2 = np.nansum(flux_sum, axis=1)
-    wlc.append(flux_sum_2)
-    
-
-start_index = 0
-for j in wlc:
-    x_values = np.arange(start_index, start_index + len(j))
-    plt.figure('combined curve')
-    plt.plot(x_values, j, '.')
-    start_index += len(j)
-# plt.figure('img 2')
-# plt.plot(wlc, '.')
+    result.save(file_name)

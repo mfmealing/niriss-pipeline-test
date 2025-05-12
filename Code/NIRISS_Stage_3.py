@@ -11,7 +11,7 @@ from astropy.io import fits
 
 from lmfit import Model as lmfit_Model
 
-def transit_model(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, ldc_type='quad'):
+def transit_model_lin(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, ldc_type='quad'):
 
     lc = plc.transit([gamma0, gamma1], rat, per, ars, ecc, inc, w, t0, t, method=ldc_type)
     syst = (a*t) + b
@@ -19,7 +19,15 @@ def transit_model(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, ldc_t
     lc = lc * syst
     return lc
 
-file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/nis_1Dspec_box_extract_combined.fits'
+def transit_model_quad(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, c, ldc_type='quad'):
+
+    lc = plc.transit([gamma0, gamma1], rat, per, ars, ecc, inc, w, t0, t, method=ldc_type)
+    syst = (a*t**2) + (b*t) + c
+ 
+    lc = lc * syst
+    return lc
+
+file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/nis_1Dspec_box_extract_combined.fits'
 
 hdul = fits.open(file)
 int_times = hdul[1].data
@@ -41,14 +49,12 @@ idx = np.arange(0, slc.shape[0], time_bin)
 bjd = (np.add.reduceat(bjd, idx)/  time_bin) [:-1]
 slc = np.add.reduceat(slc, idx, axis=0)[:-1]
 var = np.add.reduceat(var, idx, axis=0)[:-1]
-idx = np.argwhere((wav<2.0) | (wav>2.8)).T[0]
-wlc = np.nansum(slc[:,idx],axis=1)
-wlc_var = np.nansum(var[:,idx],axis=1)
+wlc = np.nansum(slc,axis=1)
+wlc_var = np.nansum(var,axis=1)
 print ('time_step (s): ', np.diff(bjd)[0]*24*60*60)  
 
 wlc_norm = wlc / np.max(wlc)
 wlc_var_norm = wlc_var / (np.max(wlc)**2)
-
 
 plt.errorbar(bjd, wlc_norm, wlc_var_norm**0.5, fmt='bo')
 plt.xlabel('Time (BJD)')
@@ -61,19 +67,19 @@ plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
 # =============================================================================
 t = bjd-bjd[0]
             
-lm_rat = 0.05412
+lm_rat = 0.14599
 lm_t0 = (bjd[-1] - bjd[0]) / 2
 lm_gamma0 = 0.2
 lm_gamma1 = 0.2
-lm_per = 32.940045
-lm_ars = 79.9
-lm_inc = 89.550
+lm_per = 4.0552941
+lm_ars = 11.406
+lm_inc = 87.735
 lm_w = 90
 lm_ecc = 0
 lm_a = (wlc[-1]-wlc[0])/(t[-1]-t[0])
 lm_b = wlc[0]
 
-initial_guess = transit_model(t, lm_rat, lm_t0, lm_gamma0 , lm_gamma1,
+initial_guess = transit_model_lin(t, lm_rat, lm_t0, lm_gamma0 , lm_gamma1,
                                 lm_per, lm_ars, lm_inc, 
                                 lm_w, lm_ecc, lm_a, lm_b)
 
@@ -86,7 +92,7 @@ plt.plot(t, initial_guess, 'g-', linewidth=3)
 # lm_fit to wlc
 # =============================================================================
 
-gmodel = lmfit_Model(transit_model)
+gmodel = lmfit_Model(transit_model_lin)
 
 lm_params = gmodel.make_params()
 lm_params.add('rat', value=lm_rat,vary=True)
@@ -104,7 +110,7 @@ lm_params.add('b', value=lm_b, vary=True)
 result = gmodel.fit(wlc, lm_params, t=t, ldc_type = 'quad', weights=(1/wlc_var**(1/2)))
 print (result.fit_report())
 
-model_fit = transit_model(t, result.params['rat'].value, 
+model_fit = transit_model_lin(t, result.params['rat'].value, 
                          result.params['t0'], result.params['gamma0'], result.params['gamma1'], lm_per, 
                          result.params['ars'], result.params['inc'], lm_w, lm_ecc,
                          result.params['a'].value, result.params['b'].value)
@@ -114,7 +120,7 @@ plt.plot(t, wlc, 'bo')
 plt.plot(t, model_fit, 'r-', linewidth = 3)
 
 fixed_vals = [result.params['t0'], result.params['gamma0'], result.params['gamma1'], result.params['ars'], result.params['inc']]
-np.savetxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/lm_fit_fixed_vals.csv', fixed_vals, delimiter=',')
+np.savetxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/lm_fit_fixed_vals.csv', fixed_vals, delimiter=',')
 
 # =============================================================================
 # residuals and best fit models

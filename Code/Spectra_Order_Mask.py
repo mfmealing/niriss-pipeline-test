@@ -29,6 +29,7 @@ print(jwst.__version__)
 
 # Individual steps that make up calwebb_spec2 and datamodels
 from jwst.assign_wcs.assign_wcs_step import AssignWcsStep
+from jwst.flatfield.flat_field_step import FlatFieldStep
 
 output_dir = './output'
 if not os.path.exists(output_dir ): 
@@ -46,7 +47,7 @@ def interpolate_nans(array):
 
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')    
 
-file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg001_nis/jw02722003001_04101_00001-seg001_nis_rateints.fits'
+file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/nis_rateints_combined.fits'
 hdul = fits.open(file)
 sci = hdul[1].data
 err = hdul[2].data
@@ -60,6 +61,9 @@ step.output_dir = output_dir
 result = step.run(file)
 wav = result.wavelength
 
+step = FlatFieldStep()
+result = step.run(result)
+
 section = result.data[:,210:250,720:770]
 bkd_section = bkd_model[210:250,720:770]
 section_med = np.nanmedian(section, axis=0)
@@ -68,13 +72,9 @@ scale_val = np.nanmedian(scale_arr)
 scaled_bkd = scale_val * bkd_model
 result.data = result.data - scaled_bkd
 
-first_pix = result.data[:,5:25,:]
-last_pix = result.data[:,-30:-5,:]
-bkd_stack = np.hstack((first_pix,last_pix))
-bkd_med = np.nanmedian(bkd_stack, axis=1)
-bkd_3d = np.expand_dims(bkd_med, axis=1)
-bkd_final = np.repeat(bkd_3d, result.data.shape[1], axis=1)
-result.data = result.data - bkd_final
+result.data[:,251:,:] = result.data[:,:,:5] = result.data[:,:,2043:] = 0
+result.err[:,251:,:] = result.err[:,:,:5] = result.err[:,:,2043:] = 0
+result.wavelength[251:,:] = result.wavelength[:,:5] = result.wavelength[:,2043:] = 0
 
 nans = np.isnan(result.data)
 nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
@@ -124,7 +124,7 @@ plt.imshow(integration, aspect='auto', vmin=0, vmax=5)
 # plt.plot(x_1, order1_first, '.', c='r')
 # plt.plot(x_1, order1_last, '.', c='r')
 
-deg = 5
+deg = 4
 poly_coeff_first = np.polyfit(x_1, order1_first, deg)
 poly_first = np.poly1d(poly_coeff_first)
 y_1_first = poly_first(x_1)
@@ -134,16 +134,24 @@ poly_last = np.poly1d(poly_coeff_last)
 y_1_last = poly_last(x_1)
 plt.plot(x_1, y_1_last+10, '.', c='b')
 
-for j in range(4, 1750):
+for j in range(5, 1820):
     if j<700:
-        order2 = integration[100:120, j]
+        order2 = integration[100:110, j]
         smooth2 = np.convolve(order2, bbox, 'same')
         der2 = np.gradient(smooth2)
         min_der2 = np.argmin(der2)
         order2_first.append(min_der2+75)
         order2_last.append(min_der2+100)
+    elif j>1700:
+        order2 = integration[180:250, j]
+        smooth2 = np.convolve(order2, bbox, 'same')
+        der2 = np.gradient(smooth2)
+        max_der2 = np.argmax(der2)
+        min_der2 = np.argmin(der2)
+        order2_first.append(max_der2+180)
+        order2_last.append(min_der2+180)
     else:
-        order2 = integration[75:241, j]
+        order2 = integration[75:250, j]
         smooth2 = np.convolve(order2, bbox, 'same')
         der2 = np.gradient(smooth2)
         max_der2 = np.argmax(der2)
@@ -151,7 +159,7 @@ for j in range(4, 1750):
         order2_first.append(max_der2+75)
         order2_last.append(min_der2+75)
 
-x_2 = np.arange(4, 1750)
+x_2 = np.arange(5, 1820)
 # plt.plot(x_2, order2_first, '.', c='r')
 # plt.plot(x_2, order2_last, '.', c='r')
 
@@ -165,20 +173,20 @@ poly_last = np.poly1d(poly_coeff_last)
 y_2_last = poly_last(x_2)
 plt.plot(x_2, y_2_last+3, '.', c='b')
 
-for k in range(4, 792):
-    order3 = integration[125:200, k]
+for k in range(5, 865):
+    order3 = integration[130:220, k]
     smooth3 = np.convolve(order3, bbox, 'same')
     der3 = np.gradient(smooth3)
     max_der3 = np.argmax(der3)
     min_der3 = np.argmin(der3)
-    order3_first.append(max_der3+125)
-    order3_last.append(min_der3+125)
+    order3_first.append(max_der3+130)
+    order3_last.append(min_der3+130)
 
-x_3 = np.arange(4, 792)
+x_3 = np.arange(5, 865)
 # plt.plot(x_3, order3_first, '.', c='r')
 # plt.plot(x_3, order3_last, '.', c='r')
 
-deg = 3
+deg = 2
 poly_coeff_first = np.polyfit(x_3, order3_first, deg)
 poly_first = np.poly1d(poly_coeff_first)
 y_3_first = poly_first(x_3)
@@ -190,7 +198,6 @@ plt.plot(x_3, y_3_last+1, '.', c='b')
 
 mask_points = []
 
-
 for i in range (integration.shape[0]):
     row_data_1 = integration[i, 4:integration.shape[1]-4]
     y_coord_1 = np.full_like(row_data_1, i)
@@ -199,14 +206,14 @@ for i in range (integration.shape[0]):
     y_val_1 = y_coord_1[row_mask_1]
     mask_points.append(np.column_stack((x_val_1, y_val_1)))
     
-    row_data_2 = integration[i, 4:1750]
+    row_data_2 = integration[i, 5:1820]
     y_coord_2 = np.full_like(row_data_2, i)
     row_mask_2 = (y_coord_2 >= y_2_first-4) & (y_coord_2 <= y_2_last+3)
     x_val_2 = x_2[row_mask_2]
     y_val_2 = y_coord_2[row_mask_2]
     mask_points.append(np.column_stack((x_val_2, y_val_2)))
     
-    row_data_3 = integration[i, 4:792]
+    row_data_3 = integration[i, 5:865]
     y_coord_3 = np.full_like(row_data_3, i)
     row_mask_3 = (y_coord_3 >= y_3_first-3) & (y_coord_3 <= y_3_last+1)
     x_val_3 = x_3[row_mask_3]
@@ -216,4 +223,5 @@ for i in range (integration.shape[0]):
 mask_points = np.vstack(mask_points)
 plt.scatter(mask_points[:,0], mask_points[:,1], c='r')
 
-np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy', mask_points)
+file_name = file.replace('nis_rateints_combined.fits', 'masked_spectra.npy')     
+np.save(file_name, mask_points)

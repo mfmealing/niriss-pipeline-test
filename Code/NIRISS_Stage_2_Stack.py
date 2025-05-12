@@ -119,15 +119,15 @@ def interpolate_nans(array):
     return array
 
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
-spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/masked_spectra.npy')
 spectra_mask = spectra_mask.astype(int)
-spectra_mask_order1 = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra_Order_1.npy')
+spectra_mask_order1 = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/masked_spectra_order_1.npy')
 spectra_mask_order1 = spectra_mask_order1.astype(int)
 
-stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg001_nis/jw02722003001_04101_00001-seg001_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg002_nis/jw02722003001_04101_00001-seg002_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg003_nis/jw02722003001_04101_00001-seg003_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg004_nis/jw02722003001_04101_00001-seg004_nis_rateints.fits']
+stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg001_nis/jw01366001001_04101_00001-seg001_nis_rateints.fits',
+                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg002_nis/jw01366001001_04101_00001-seg002_nis_rateints.fits',
+                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg003_nis/jw01366001001_04101_00001-seg003_nis_rateints.fits',
+                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg004_nis/jw01366001001_04101_00001-seg004_nis_rateints.fits']
 
 for file in stage_1_file_list:
   
@@ -179,14 +179,14 @@ hdul[5].data =  varp_stack
 hdul[6].data =  varr_stack
  
 outfile0  = rateints_file  
-outfile0 = outfile0.replace('jw02722003001_04101_00001-seg004_nis/jw02722003001_04101_00001-seg004_', '')
+outfile0 = outfile0.replace('jw01366001001_04101_00001-seg004_nis/jw01366001001_04101_00001-seg004_', '')
 outfile0 = outfile0.replace('.fits', '_combined.fits')
  
 # # # Write the new HDU structure to outfile
 hdul.writeto(outfile0, overwrite=True)
 
 hdul.close()
-  
+
 file = outfile0
     
 hdul = fits.open(file)
@@ -234,8 +234,8 @@ low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
 result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
 result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
 
-# plt.figure('after nan removal')
-# plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
+plt.figure('after nan removal')
+plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
 
 # step = Extract1dStep()
 # result = step.run(result)
@@ -251,7 +251,6 @@ mask_3d_order1 = np.tile(mask_3d_order1, (result.data.shape[0], 1, 1))
 box_mask_order1 = np.where(mask_3d_order1, result.data, np.nan)
 box_mask_err_order1 = np.where(mask_3d_order1, result.err, np.nan)
 # plt.imshow(box_mask_order1[100], aspect='auto', vmin=0)
-
 
     # # =============================================================================
     # #         box extraction
