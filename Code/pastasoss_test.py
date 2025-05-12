@@ -204,9 +204,9 @@ trace2 = pastasoss.get_soss_traces(pwcpos=pwcpos, order='2', interp=True)
 x1, y1, wav1 = trace1.x, trace1.y, trace1.wavelength
 x2, y2, wav2 = trace2.x, trace2.y, trace2.wavelength
 
-# plt.plot(x1,y1, lw=1.5, color='cornflowerblue')
-# plt.plot(x2,y2, lw=1.5, color='orangered')
-
+plt.plot(x1,y1, lw=1.5, color='cornflowerblue')
+plt.plot(x2,y2, lw=1.5, color='orangered')
+xx
 result_med = np.nanmedian(result.data, axis=0)
 npix = 20
 
