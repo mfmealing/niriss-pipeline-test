@@ -11,10 +11,11 @@ with open("/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Proj
 
 wav_true, depth_true, depth_err_true = vals_true['Wavelength (microns)'], vals_true[' transit depth'], vals_true[' uncertainty']
 
+# plt.rcParams.update({'font.size': 20})
 plt.figure('transmission spectrum')
 plt.errorbar(wav, depth*100, depth_err*100, fmt='bo', label='Current Work')
 plt.errorbar(wav_true, depth_true*100, depth_err_true*100, fmt='ro', label='Madhusudhan 2023')
-plt.xlabel('Wavelength (μm)')
-plt.ylabel('Transit Depth (%)')
+plt.xlabel('Wavelength (μm)', fontsize=30)
+plt.ylabel('Transit Depth (%)', fontsize=30)
 plt.xlim(0.7,3)
 plt.legend(loc=0)

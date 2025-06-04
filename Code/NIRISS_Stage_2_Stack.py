@@ -123,13 +123,15 @@ spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUn
 spectra_mask = spectra_mask.astype(int)
 spectra_mask_order1 = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/masked_spectra_order_1.npy')
 spectra_mask_order1 = spectra_mask_order1.astype(int)
+field_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/field_star_mask.npy')
+field_mask = field_mask.astype(int)
 
-stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg001_nis/jw01366001001_04101_00001-seg001_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg002_nis/jw01366001001_04101_00001-seg002_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg003_nis/jw01366001001_04101_00001-seg003_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg004_nis/jw01366001001_04101_00001-seg004_nis_rateints.fits']
+file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04101_00001-seg001_nis/jw02734002001_04101_00001-seg001_nis_rateints.fits',
+             '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04101_00001-seg002_nis/jw02734002001_04101_00001-seg002_nis_rateints.fits',
+             '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04101_00001-seg003_nis/jw02734002001_04101_00001-seg003_nis_rateints.fits']
+field_file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04102_00001-seg001_nis/jw02734002001_04102_00001-seg001_nis_rateints.fits'
 
-for file in stage_1_file_list:
+for file in file_list:
   
     rateints_file = file
   
@@ -143,7 +145,7 @@ for file in stage_1_file_list:
     varp = hdul[5].data   
     varr = hdul[6].data  
     
-    if file == stage_1_file_list[0]:
+    if file == file_list[0]:
         sci_stack = sci
         err_stack = err
         dq_stack = dq
@@ -179,7 +181,7 @@ hdul[5].data =  varp_stack
 hdul[6].data =  varr_stack
  
 outfile0  = rateints_file  
-outfile0 = outfile0.replace('jw01366001001_04101_00001-seg004_nis/jw01366001001_04101_00001-seg004_', '')
+outfile0 = outfile0.replace('jw02734002001_04101_00001-seg001_nis/jw02734002001_04101_00001-seg003_', '')
 outfile0 = outfile0.replace('.fits', '_combined.fits')
  
 # # # Write the new HDU structure to outfile
@@ -196,7 +198,7 @@ dq = hdul[3].data
 int_times = hdul[4].data  
 varp = hdul[5].data   
 varr = hdul[6].data  
-     
+
 step = AssignWcsStep()
 step.output_dir = output_dir
 result = step.run(file)
@@ -215,6 +217,7 @@ result.data = result.data - scaled_bkd
 
 mask = np.ones((256,2048), dtype=bool)
 mask[spectra_mask[:,1], spectra_mask[:,0]] = False
+# mask[field_mask[:,1], field_mask[:,0]] = False
 mask_3d = np.expand_dims(mask, axis=0)
 mask_3d = np.tile(mask_3d, (result.data.shape[0], 1, 1))
 bkd_mask = np.where(mask_3d, result.data, np.nan)
@@ -231,25 +234,102 @@ result.wavelength[251:,:] = result.wavelength[:,:5] = result.wavelength[:,2043:]
 nans = np.isnan(result.data)
 nans_frac = np.sum(nans, axis=0) / result.data.shape[0]
 low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
-result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
+if low_nans.shape[1] > 0:
+    result.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result.data[:,low_nans[0],low_nans[1]])
 result.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result.data)
-
-plt.figure('after nan removal')
-plt.imshow(result.data[50], aspect='auto', vmin=0, vmax=5)
 
 # step = Extract1dStep()
 # result = step.run(result)
+
+plt.figure('after nan removal')
+plt.imshow(result.data[100], aspect='auto', vmin=0, vmax=10)
+
+hdul = fits.open(field_file)
+sci = hdul[1].data
+err = hdul[2].data
+dq = hdul[3].data 
+int_times = hdul[4].data  
+varp = hdul[5].data   
+varr = hdul[6].data  
+
+step = AssignWcsStep()
+step.output_dir = output_dir
+result_field = step.run(field_file)
+wav_field = result_field.wavelength
+
+step = FlatFieldStep()
+result_field = step.run(result_field)
+
+section = result_field.data[:,210:250,720:770]
+bkd_section = bkd_model[210:250,720:770]
+section_med = np.nanmedian(section, axis=0)
+scale_arr = section_med / bkd_section
+scale_val = np.nanmedian(scale_arr)
+scaled_bkd = scale_val * bkd_model
+result_field.data = result_field.data - scaled_bkd
+
+mask = np.ones((256,2048), dtype=bool)
+mask[spectra_mask[:,1], spectra_mask[:,0]] = False
+# mask[field_mask[:,1], field_mask[:,0]] = False
+mask_3d = np.expand_dims(mask, axis=0)
+mask_3d = np.tile(mask_3d, (result_field.data.shape[0], 1, 1))
+bkd_mask = np.where(mask_3d, result_field.data, np.nan)
+bkd_med = np.nanmedian(bkd_mask, axis=1)
+bkd_3d = np.expand_dims(bkd_med, axis=1)
+bkd_final = np.repeat(bkd_3d, result_field.data.shape[1], axis=1)
+result_field.data[:,:,:700] = result_field.data[:,:,:700] - bkd_final[:,:,:700]
+
+result_field.data[:,251:,:] = result_field.data[:,:,:5] = result_field.data[:,:,2043:] = 0
+
+nans = np.isnan(result_field.data)
+nans_frac = np.sum(nans, axis=0) / result_field.data.shape[0]
+low_nans = np.array(np.where((nans_frac>0) & (nans_frac<0.1)))
+if low_nans.shape[1] > 0:
+    result_field.data[:,low_nans[0],low_nans[1]] = np.apply_along_axis(interpolate_nans, axis=0, arr=result_field.data[:,low_nans[0],low_nans[1]])
+result_field.data = np.apply_along_axis(interpolate_nans, axis=2, arr=result_field.data)
+
+# med_field = np.median(result_field.data, axis=0)
+# med_field[:,:500] = 0
+# med_field_3d = np.expand_dims(med_field, axis=0)
+# field_star = np.repeat(med_field_3d, result.data.shape[0], axis=0)
+
+# scale = med_field / np.max(med_field)
+# bkd1 = np.array(np.where(scale[:,:1700]>0.15))
+# bkd2 = np.array(np.where(scale[:,1700:]>0.25))
+# bkd2[1] += 1700
+# # plt.plot(bkd1[1], bkd1[0], '.', c='r')
+# # plt.plot(bkd2[1], bkd2[0], '.', c='r')
+# bkd_all = np.hstack((bkd1,bkd2))
+# y,x = bkd_all
+
+# alpha_scale = {}
+
+# for i,j in zip(y,x):
+#     alpha = np.dot(result.data[:,i,j], field_star[:,i,j]) / np.dot(field_star[:,i,j], field_star[:,i,j])
+#     alpha = np.clip(alpha, 0, 5)
+#     alpha_scale[(i,j)] = alpha
+    
+#     result.data[:,i,j] = result.data[:,i,j] - field_star[:,i,j]*alpha
+
+# plt.figure('after field star removal')
+# plt.imshow(result.data[5], aspect='auto', vmin=0, vmax=10)
 
 pwcpos = result.meta.instrument.pupil_position
 trace_order1 = pastasoss.get_soss_traces(pwcpos=pwcpos, order='1', interp=True) 
 x_order1, y_order1, wav_order1 = trace_order1.x, trace_order1.y, trace_order1.wavelength
 
+# ap = 15
+# plt.plot(x_order1, y_order1+ap, c='r')
+# plt.plot(x_order1, y_order1-ap, c='b')
+
 mask_order1 = np.zeros((256,2048), dtype=bool)
 mask_order1[spectra_mask_order1[:,1], spectra_mask_order1[:,0]] = True
+# mask_order1[field_mask[:,1], field_mask[:,0]] = False
 mask_3d_order1 = np.expand_dims(mask_order1, axis=0)
 mask_3d_order1 = np.tile(mask_3d_order1, (result.data.shape[0], 1, 1))
 box_mask_order1 = np.where(mask_3d_order1, result.data, np.nan)
 box_mask_err_order1 = np.where(mask_3d_order1, result.err, np.nan)
+# plt.figure()
 # plt.imshow(box_mask_order1[100], aspect='auto', vmin=0)
 
     # # =============================================================================

@@ -71,14 +71,15 @@ wlc = np.nansum(slc, axis=1)
 plt.figure('wlc')
 plt.plot(bjd, wlc, '.')
 
+lit_vals = np.loadtxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/literature_vals.csv', delimiter=',')
 fixed_vals = np.loadtxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/lm_fit_fixed_vals.csv', delimiter=',')
 
 t= bjd-bjd[0]
-lm_rat = 0.11930
+lm_rat = lit_vals[0]
 lm_t0 = fixed_vals[0]
 lm_gamma0 = fixed_vals[1]
 lm_gamma1 = fixed_vals[2]
-lm_per = 3.4252602
+lm_per = lit_vals[1]
 lm_ars = fixed_vals[3]
 lm_inc = fixed_vals[4]
 lm_w = 90

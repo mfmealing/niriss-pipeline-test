@@ -47,7 +47,7 @@ def interpolate_nans(array):
 
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')    
 
-file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/nis_rateints_combined.fits'
+file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/nis_rateints_combined.fits'
 hdul = fits.open(file)
 sci = hdul[1].data
 err = hdul[2].data
@@ -120,7 +120,7 @@ for i in range(4, integration.shape[1]-4):
     
 x_1 = np.arange(4, integration.shape[1]-4)
 plt.figure('spectra order mask')
-plt.imshow(integration, aspect='auto', vmin=0, vmax=5)
+plt.imshow(integration, aspect='auto', vmin=0, vmax=10)
 # plt.plot(x_1, order1_first, '.', c='r')
 # plt.plot(x_1, order1_last, '.', c='r')
 
@@ -222,6 +222,6 @@ for i in range (integration.shape[0]):
 
 mask_points = np.vstack(mask_points)
 plt.scatter(mask_points[:,0], mask_points[:,1], c='r')
-
+xx
 file_name = file.replace('nis_rateints_combined.fits', 'masked_spectra.npy')     
 np.save(file_name, mask_points)

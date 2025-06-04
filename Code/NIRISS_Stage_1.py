@@ -50,16 +50,18 @@ if not os.path.exists(output_dir ):
     os.makedirs(output_dir )
     
 from jwst.stpipe import Step 
-    
-spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/masked_spectra.npy')
-spectra_mask = spectra_mask.astype(int)
-bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
 
-seg_list = ['001', '002', '003', '004']
+bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/masked_spectra.npy')
+spectra_mask = spectra_mask.astype(int)
+# field_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/field_star_mask.npy')
+# field_mask = field_mask.astype(int)
+
+seg_list = ['001', '002', '003', '004', '005']
 
 for seg in seg_list: 
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg%s_nis/jw01366001001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/jw01353101001_04101_00001-seg%s_nis/jw01353101001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
     result = file
     
     step = GroupScaleStep()
@@ -73,7 +75,7 @@ for seg in seg_list:
      
     step = SuperBiasStep()
     result = step.run(result)
-
+    
     file_name = file.replace('uncal', 'pre_1f')
     result.save(file_name) 
         
@@ -94,12 +96,12 @@ for k in range(sci_stack.shape[1]):
     group_flux.append(group_med)
 
 med_stack_final = np.stack(group_flux, axis=0)
-np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/group_med_pre_1f.npy', med_stack_final)
-group_med_stack = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/group_med_pre_1f.npy')
+np.save('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/group_med_pre_1f.npy', med_stack_final)
+group_med_stack = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/group_med_pre_1f.npy')
 
 for seg in seg_list: 
 
-    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/jw01366001001_04101_00001-seg%s_nis/jw01366001001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
+    file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_17b_NIRISS/jw01353101001_04101_00001-seg%s_nis/jw01353101001_04101_00001-seg%s_nis_uncal.fits'%(seg, seg)
     result = file
     
     step = GroupScaleStep()
@@ -120,6 +122,7 @@ for seg in seg_list:
     
     mask = np.ones((256,2048), dtype=bool)
     mask[spectra_mask[:,1], spectra_mask[:,0]] = False
+    # mask[field_mask[:,1], field_mask[:,0]] = False
     mask_4d = np.expand_dims(np.expand_dims(mask, axis=0), axis=0)
     mask_4d = np.tile(mask_4d, (result.data.shape[0], result.data.shape[1], 1, 1))
     f_noise_mask = np.where(mask_4d, f_noise, np.nan)

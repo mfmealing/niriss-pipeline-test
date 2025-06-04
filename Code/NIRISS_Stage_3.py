@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from uncertainties import ufloat
-from sklearn.preprocessing import normalize
+# from uncertainties import ufloat
+# from sklearn.preprocessing import normalize
  
 matplotlib.style.use('classic')
  
@@ -27,7 +27,7 @@ def transit_model_quad(t, rat, t0, gamma0, gamma1, per, ars, inc, w, ecc, a, b, 
     lc = lc * syst
     return lc
 
-file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/nis_1Dspec_box_extract_combined.fits'
+file = '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/nis_1Dspec_box_extract_combined.fits'
 
 hdul = fits.open(file)
 int_times = hdul[1].data
@@ -55,25 +55,28 @@ print ('time_step (s): ', np.diff(bjd)[0]*24*60*60)
 
 wlc_norm = wlc / np.max(wlc)
 wlc_var_norm = wlc_var / (np.max(wlc)**2)
-
+# plt.rcParams.update({'font.size': 20})
 plt.errorbar(bjd, wlc_norm, wlc_var_norm**0.5, fmt='bo')
 plt.xlabel('Time (BJD)')
 plt.ylabel('Normalised Flux')
-plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+
+# plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
 
 
 # =============================================================================
 # initial guess
 # =============================================================================
+vals = np.loadtxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/literature_vals.csv', delimiter=',')
+
 t = bjd-bjd[0]
             
-lm_rat = 0.14599
+lm_rat = vals[0]
 lm_t0 = (bjd[-1] - bjd[0]) / 2
 lm_gamma0 = 0.2
 lm_gamma1 = 0.2
-lm_per = 4.0552941
-lm_ars = 11.406
-lm_inc = 87.735
+lm_per = vals[1]
+lm_ars = vals[2]
+lm_inc = vals[3]
 lm_w = 90
 lm_ecc = 0
 lm_a = (wlc[-1]-wlc[0])/(t[-1]-t[0])
@@ -120,7 +123,7 @@ plt.plot(t, wlc, 'bo')
 plt.plot(t, model_fit, 'r-', linewidth = 3)
 
 fixed_vals = [result.params['t0'], result.params['gamma0'], result.params['gamma1'], result.params['ars'], result.params['inc']]
-np.savetxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_39b_NIRISS/lm_fit_fixed_vals.csv', fixed_vals, delimiter=',')
+np.savetxt('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/lm_fit_fixed_vals.csv', fixed_vals, delimiter=',')
 
 # =============================================================================
 # residuals and best fit models
