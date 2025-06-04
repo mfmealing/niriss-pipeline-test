@@ -77,15 +77,14 @@ def interpolate_nans(array):
     return array
 
 bkd_model = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/model_background256.npy')
-spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra.npy')
+spectra_mask = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/masked_spectra.npy')
 spectra_mask = spectra_mask.astype(int)
-spectra_mask_order1 = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/Masked_Spectra_Order_1.npy')
+spectra_mask_order1 = np.load('/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/masked_spectra_order_1.npy')
 spectra_mask_order1 = spectra_mask_order1.astype(int)
 
-stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg001_nis/jw02722003001_04101_00001-seg001_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg002_nis/jw02722003001_04101_00001-seg002_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg003_nis/jw02722003001_04101_00001-seg003_nis_rateints.fits',
-                     '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/K2_18b_NIRISS/jw02722003001_04101_00001-seg004_nis/jw02722003001_04101_00001-seg004_nis_rateints.fits']
+stage_1_file_list = ['/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04101_00001-seg001_nis/jw02734002001_04101_00001-seg001_nis_rateints.fits',
+             '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04101_00001-seg002_nis/jw02734002001_04101_00001-seg002_nis_rateints.fits',
+             '/Users/c24050258/Library/CloudStorage/OneDrive-CardiffUniversity/Projects/NIRISS_Pipeline_Test/Data/WASP_96b_NIRISS/jw02734002001_04101_00001-seg003_nis/jw02734002001_04101_00001-seg003_nis_rateints.fits']
 
 for file in stage_1_file_list:
   
@@ -137,7 +136,7 @@ hdul[5].data =  varp_stack
 hdul[6].data =  varr_stack
  
 outfile0  = rateints_file  
-outfile0 = outfile0.replace('jw02722003001_04101_00001-seg004_nis/jw02722003001_04101_00001-seg004_', '')
+outfile0 = outfile0.replace('jw02734002001_04101_00001-seg003_nis/jw02734002001_04101_00001-seg003_', '')
 outfile0 = outfile0.replace('.fits', '_combined.fits')
  
 # # # Write the new HDU structure to outfile
@@ -206,13 +205,32 @@ x2, y2, wav2 = trace2.x, trace2.y, trace2.wavelength
 
 plt.plot(x1,y1, lw=1.5, color='cornflowerblue')
 plt.plot(x2,y2, lw=1.5, color='orangered')
-xx
+
+points1 = np.linspace(0, len(x1)-1, 5).astype(int)
+points2 = np.linspace(0, len(x2)-1, 5).astype(int)
+
+for i in points1:
+    if i == points1[0]:
+        plt.text(x1[i]+75, y1[i]-10, f"{wav1[i]:.1f}", ha="center", fontsize=12, color='cornflowerblue')
+    elif i == points1[-1]:
+        plt.text(x1[i]-75, y1[i]-25, f"{wav1[i]:.1f}", ha="center", fontsize=12, color='cornflowerblue')
+    else:
+        plt.text(x1[i], y1[i]-10, f"{wav1[i]:.1f}", ha="center", fontsize=12, color='cornflowerblue')
+
+for j in points2:
+    if j == points2[0]:
+        plt.text(x2[j]+75, y2[j]-10, f"{wav2[j]:.1f}", ha="center", fontsize=12, color='orangered')
+    elif j == points2[-1]:
+        plt.text(x2[j]+75, y2[j]-10, f"{wav2[j]:.1f}", ha="center", fontsize=12, color='orangered')
+    else:
+        plt.text(x2[j], y2[j]-10, f"{wav2[j]:.1f}", ha="center", fontsize=12, color='orangered')
+
 result_med = np.nanmedian(result.data, axis=0)
 npix = 20
 
 flux1 = [result_med[int(y)-npix:int(y)+npix, int(x)].sum() for x, y in zip(x1, y1)]
 flux2 = [result_med[int(y)-npix:int(y)+npix, int(x)].sum() for x, y in zip(x2, y2)]
-
+xx
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6))
 fig.suptitle('Extracted SOSS Spectra')
 ax1.set_title('Order 1')
